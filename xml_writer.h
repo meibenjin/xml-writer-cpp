@@ -32,10 +32,6 @@
 #include <stack>
 #include <cassert>
 
-#ifndef NO_BOOST
-#include <boost/lexical_cast.hpp>
-#endif
-
 namespace xml {
 
 	class element;
@@ -48,13 +44,14 @@ namespace xml {
 	public:
 		// writer must be bound to an ostream
 		writer(std::ostream& os) : os(os), need_header(true) {}
-		virtual ~writer(void) { assert(elements.empty()); }
+		~writer(void) { assert(elements.empty()); }
 
 	private:
-		std::ostream& os;
-		bool need_header;
-		std::stack<element*> elements;
+		std::ostream& os;				// output stream
+		bool need_header;				// have we written an XML header yet?
+		std::stack<element*> elements;	// stack of open element tags
 
+		// write XML header, if necessary
 		writer& header() {
 			if (need_header) {
 				os << "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
@@ -63,8 +60,17 @@ namespace xml {
 			return *this;
 		}
 
-		writer& putc(char c) { os.put(c); return *this;}
-		writer& puts(const char* str) { os << str; return *this; }
+		// write a single character to the output stream
+		writer& putc(char c) {
+			os.put(c);
+			return *this;
+		}
+
+		// write a string to the output stream
+		writer& puts(const char* str) {
+			os << str;
+			return *this;
+		}
 
 		friend element;
 	};
@@ -84,19 +90,18 @@ namespace xml {
 			wr.elements.push(this);
 		}
 
-		virtual ~element() { end(); }
+		// close the current element tag
+		~element() {
+			if (!wr.elements.empty() && wr.elements.top() == this) {
+				wr.elements.pop();
+				if (tagopen)
+					wr.puts("/>");
+				else
+					wr.puts("</").puts(name).putc('>');
+			}
+		}
 		
-#ifndef NO_BOOST
-		template <class T>
-		element& attr(const char* name, T value) { return attr(name, boost::lexical_cast<std::string>(value)); }
-
-		template <class T>
-		element& contents(T value) { return contents(boost::lexical_cast<std::string>(value)); }
-#endif
-
 		// write an attribute for the current element
-		element& attr(const char* name, const std::string& value) { return attr(name, value.c_str()); }
-
 		element& attr(const char* name, const char* value) {
 			assert(name != 0);
 			assert(value != 0);
@@ -107,9 +112,19 @@ namespace xml {
 			return *this;
 		}
 
-		// write text content for the current element
-		element& contents(const std::string& str) { return contents(str.c_str()); }
+		// attr() overload for std::string type
+		element& attr(const char* name, const std::string& value) { return attr(name, value.c_str()); }
 
+		// attr() function template for all streamable types
+		template <class T>
+		element& attr(const char* name, T value) {
+			std::stringstream ss;
+			ss << value;
+			attr(name, ss.str());
+			return *this;
+		}
+
+		// write text content for the current element
 		element& contents(const char* str) {
 			assert(str != 0);
 			check_parent();
@@ -117,21 +132,22 @@ namespace xml {
 			return *this;
 		}
 
-		// end element. not normally called directly
-		void end() {
-			if (!wr.elements.empty() && wr.elements.top() == this) {
-				wr.elements.pop();
-				if (tagopen)
-					wr.puts("/>");
-				else
-					wr.puts("</").puts(name).putc('>');
-			}
+		// contents() overload for std::string type
+		element& contents(const std::string& str) { return contents(str.c_str()); }
+
+		// contents() function template for all streamable types
+		template <class T>
+		element& contents(T value) {
+			std::stringstream ss;
+			ss << value;
+			contents(ss.str());
+			return *this;
 		}
 
 	private:
-		writer& wr;
-		const char* name;
-		bool tagopen;
+		writer& wr;			// bound XML writer
+		const char* name;	// name of current element
+		bool tagopen;		// is the element tag for this element still open?
 
 		// write a string quoting characters which have meaning in xml
 		element& qputs(const char* str) {
