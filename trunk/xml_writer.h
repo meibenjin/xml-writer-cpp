@@ -47,9 +47,9 @@ namespace xml {
         ~writer(void) { assert(elements.empty()); }
 
     private:
-        std::ostream& os;				// output stream
-        bool need_header;				// have we written an XML header yet?
-        std::stack<element*> elements;	// stack of open element tags
+        std::ostream& os;               // output stream
+        bool need_header;               // have we written an XML header yet?
+        std::stack<element*> elements;  // stack of open element tags
 
         // write XML header, if necessary
         writer& header() {
@@ -145,9 +145,9 @@ namespace xml {
         }
 
     private:
-        writer& wr;			// bound XML writer
-        const char* name;	// name of current element
-        bool tagopen;		// is the element tag for this element still open?
+        writer& wr;         // bound XML writer
+        const char* name;   // name of current element
+        bool tagopen;       // is the element tag for this element still open?
 
         // write a string quoting characters which have meaning in xml
         element& qputs(const char* str) {
