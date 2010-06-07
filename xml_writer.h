@@ -159,7 +159,7 @@ namespace xml {
                     case '\'': wr.puts("&apos;"); break;
                     case '"': wr.puts("&quot;"); break;
                     default: wr.putc(*str); break;
-            }
+                }
             return *this;
         }
 
