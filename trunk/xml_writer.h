@@ -144,6 +144,19 @@ namespace xml {
             return *this;
         }
 
+        // write CDATA section
+        element& cdata(const char* str) {
+            assert(str != 0);
+            check_parent();
+            wr.puts("<![CDATA[");
+            wr.puts(str);
+            wr.puts("]]>");
+            return *this;
+        }
+
+        // cdata() overload for std::string type
+        element& cdata(const std::string& str) { return cdata(str.c_str()); }
+
     private:
         writer& wr;         // bound XML writer
         const char* name;   // name of current element
