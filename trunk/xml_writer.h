@@ -72,6 +72,22 @@ namespace xml {
             return *this;
         }
 
+        // write a string to the output stream & strip out any invalid XML characters
+        writer& sputs(const char* str) {
+            for (; *str; ++str)
+                switch (*str) {
+                case '\r':
+                case '\n':
+                case '\t':
+                    os << *str;
+                    break;
+                default:
+                    if (*str >= ' ')
+                        os << *str;
+            }
+            return *this;
+        }
+
         friend element;
     };
 
@@ -149,7 +165,7 @@ namespace xml {
             assert(str != 0);
             check_parent();
             wr.puts("<![CDATA[");
-            wr.puts(str);
+            wr.sputs(str);
             wr.puts("]]>");
             return *this;
         }
